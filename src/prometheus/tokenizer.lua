@@ -296,6 +296,42 @@ local function int(self, chars, seperators)
 	return table.concat(buffer);
 end
 
+local function parseHex(str)
+	if #str == 0 then return nil end
+	local num = 0
+	for i = 1, #str do
+		local b = string.byte(str, i)
+		local digit
+		if b >= 48 and b <= 57 then
+			digit = b - 48
+		elseif b >= 65 and b <= 70 then
+			digit = b - 55
+		elseif b >= 97 and b <= 102 then
+			digit = b - 87
+		else
+			break
+		end
+		num = num * 16 + digit
+	end
+	return num
+end
+
+local function parseBinary(str)
+	if #str == 0 then return nil end
+	local num = 0
+	for i = 1, #str do
+		local b = string.byte(str, i)
+		if b == 48 then
+			num = num * 2
+		elseif b == 49 then
+			num = num * 2 + 1
+		else
+			break
+		end
+	end
+	return num
+end
+
 -- Lex the next token as a Number
 function Tokenizer:number()
 	local startPos = self.index;
@@ -305,14 +341,20 @@ function Tokenizer:number()
 		if self.BinaryNums and is(self, lookupify(self.BinaryNums)) then
 			self.index = self.index + 1;
 			source = int(self, self.BinaryNumberCharsLookup, lookupify(self.DecimalSeperators or {}));
-			local value = tonumber(source, 2);
+			local value = parseBinary(source);
+			if not value then
+				logger:error(generateError(self, "malformed binary number"));
+			end
 			return token(self, startPos, Tokenizer.TokenKind.Number, value);
 		end
 
 		if self.HexadecimalNums and is(self, lookupify(self.HexadecimalNums)) then
 			self.index = self.index + 1;
 			source = int(self, self.HexNumberCharsLookup, lookupify(self.DecimalSeperators or {}));
-			local value = tonumber(source, 16);
+			local value = parseHex(source);
+			if not value then
+				logger:error(generateError(self, "malformed hexadecimal number"));
+			end
 			return token(self, startPos, Tokenizer.TokenKind.Number, value);
 		end
 	end
