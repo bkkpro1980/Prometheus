@@ -58,7 +58,7 @@ check("TEST 6", string.format("%.0f,%.0f", fold_large_add, fold_large_sub), "900
 -- This product exceeds the safe integer range and must not be incorrectly folded.
 local hashProduct = 0x811C9DC5 * 0x01000193
 local hashMod = hashProduct % 0x100000000
-check("TEST 7", string.format("%.0f,%.0f", hashProduct, hashMod), "36342807354921656,2275990200")
+check("TEST 7", string.format("%.0f,%.0f", hashProduct, hashMod), "36342608889142560,84696352")
 
 -- Inexact division must preserve dyadic fraction precision without assuming (1/3)*3 == 1.
 local div_exact = 1000 / 8
@@ -123,4 +123,31 @@ check(
 	"TEST 15",
 	pow1 .. "," .. pow2 .. "," .. string.format("%.0f", pow3),
 	"65536,4294967296,9007199254740992"
+)
+
+-- Large modulo operands must survive NumbersToExpressions without losing precision.
+local mod_large1 = 4503599627370497 % 12345
+local mod_large2 = 9007199254740000 % 65536
+check(
+	"TEST 16",
+	mod_large1 .. "," .. mod_large2,
+	"11177,64544"
+)
+
+-- Negative modulo generation must preserve Lua's modulo semantics.
+local mod_negative1 = -123456789 % 1000
+local mod_negative2 = -4503599627370497 % 12345
+check(
+	"TEST 17",
+	mod_negative1 .. "," .. mod_negative2,
+	"211,116"
+)
+
+-- Numbers near the safe-integer boundary must remain exact.
+local boundary_pos = 9007199254740991
+local boundary_neg = -9007199254740991
+check(
+	"TEST 18",
+	string.format("%.0f,%.0f", boundary_pos, boundary_neg),
+	"9007199254740991,-9007199254740991"
 )

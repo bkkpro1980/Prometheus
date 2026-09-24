@@ -488,37 +488,35 @@ function Ast.StringExpression(value)
 end
 
 function Ast.OrExpression(lhs, rhs, simplify)
-	if(simplify and rhs.isConstant and lhs.isConstant) then
-		if lhs.value then
-			return lhs;
-		else
-			return rhs;
-		end
-	end
+    if(simplify and rhs.isConstant and lhs.isConstant) then
+        local success, val = pcall(function() return lhs.value or rhs.value end);
+        if success then
+            return Ast.ConstantNode(val);
+        end
+    end
 
-	return {
-		kind = AstKind.OrExpression,
-		lhs = lhs,
-		rhs = rhs,
-		isConstant = false,
-	}
+    return {
+        kind = AstKind.OrExpression,
+        lhs = lhs,
+        rhs = rhs,
+        isConstant = false,
+    }
 end
 
 function Ast.AndExpression(lhs, rhs, simplify)
-	if(simplify and rhs.isConstant and lhs.isConstant) then
-		if lhs.value then
-			return rhs;
-		else
-			return lhs;
-		end
-	end
+    if(simplify and rhs.isConstant and lhs.isConstant) then
+        local success, val = pcall(function() return lhs.value and rhs.value end);
+        if success then
+            return Ast.ConstantNode(val);
+        end
+    end
 
-	return {
-		kind = AstKind.AndExpression,
-		lhs = lhs,
-		rhs = rhs,
-		isConstant = false,
-	}
+    return {
+        kind = AstKind.AndExpression,
+        lhs = lhs,
+        rhs = rhs,
+        isConstant = false,
+    }
 end
 
 function Ast.LessThanExpression(lhs, rhs, simplify)

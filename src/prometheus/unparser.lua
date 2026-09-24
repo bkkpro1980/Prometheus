@@ -407,9 +407,12 @@ function Unparser:unparseExpression(expression, tabbing)
 	end
 
 	if(expression.kind == AstKind.NumberExpression) then
-		if(expression.raw) then
+		local val = expression.value;
+
+		if(expression.raw and type(val) == "number") then
 			if self.luaVersion == LuaVersion.Lua51 then
 				local prefix = expression.raw:sub(1, 2):lower()
+
 				-- Lua 5.1 does not support binary literals (0b...)
 				if prefix ~= "0b" then
 					return (expression.raw:gsub("_", ""));
@@ -419,18 +422,24 @@ function Unparser:unparseExpression(expression, tabbing)
 			end
 		end
 
-		local val = expression.value;
+		if type(val) == "string" then
+			return val;
+		end
+
 		if(val ~= val) then
 			return "(0/0)";
 		end
+
 		if(val == 1/0) then
 			return "2e1024";
 		end
+
 		if(val == -1/0) then
 			return "-2e1024";
 		end
 
 		local str;
+
 		if(val % 1 == 0 and math.abs(val) <= 9007199254740992) then
 			str = string.format("%.0f", val);
 		else
@@ -442,6 +451,7 @@ function Unparser:unparseExpression(expression, tabbing)
 		elseif(str:sub(1, 3) == "-0.") then
 			str = "-" .. str:sub(3);
 		end
+
 		return str;
 	end
 
