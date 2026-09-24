@@ -296,40 +296,42 @@ local function int(self, chars, seperators)
 	return table.concat(buffer);
 end
 
+local binToHex = {
+	["0000"] = "0", ["0001"] = "1", ["0010"] = "2", ["0011"] = "3",
+	["0100"] = "4", ["0101"] = "5", ["0110"] = "6", ["0111"] = "7",
+	["1000"] = "8", ["1001"] = "9", ["1010"] = "a", ["1011"] = "b",
+	["1100"] = "c", ["1101"] = "d", ["1110"] = "e", ["1111"] = "f",
+}
+
 local function parseHex(str)
 	if #str == 0 then return nil end
-	local num = 0
-	for i = 1, #str do
-		local b = string.byte(str, i)
-		local digit
-		if b >= 48 and b <= 57 then
-			digit = b - 48
-		elseif b >= 65 and b <= 70 then
-			digit = b - 55
-		elseif b >= 97 and b <= 102 then
-			digit = b - 87
-		else
-			break
-		end
-		num = num * 16 + digit
-	end
-	return num
+	
+	-- Let Lua's native C string-to-number parser perform exact IEEE-754 round-to-nearest-even
+	return tonumber("0x" .. str)
 end
 
 local function parseBinary(str)
 	if #str == 0 then return nil end
-	local num = 0
-	for i = 1, #str do
-		local b = string.byte(str, i)
-		if b == 48 then
-			num = num * 2
-		elseif b == 49 then
-			num = num * 2 + 1
-		else
-			break
+	if str:find("[^01]") then return nil end
+
+	-- For <= 53 bits, direct integer accumulation into double is exact
+	if #str <= 53 then
+		local num = 0
+		for i = 1, #str do
+			num = num * 2 + (string.byte(str, i) - 48)
 		end
+		return num
 	end
-	return num
+
+	-- For > 53 bits, convert 4-bit nibbles to hex to preserve exact IEEE-754 rounding via tonumber
+	local pad = (4 - (#str % 4)) % 4
+	local padded = string.rep("0", pad) .. str
+	local hexBuf = {}
+	for i = 1, #padded, 4 do
+		local nibble = padded:sub(i, i + 3)
+		hexBuf[#hexBuf + 1] = binToHex[nibble]
+	end
+	return tonumber("0x" .. table.concat(hexBuf))
 end
 
 -- Lex the next token as a Number

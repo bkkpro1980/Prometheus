@@ -1,3 +1,4 @@
+--!nolint IntegerParsing
 --============================================================
 -- Numeric Precision & Constant Folding Test Suite
 -- Target: Tokenizer, Parser, Ast, Unparser
@@ -140,7 +141,7 @@ local mod_negative2 = -4503599627370497 % 12345
 check(
 	"TEST 17",
 	mod_negative1 .. "," .. mod_negative2,
-	"211,116"
+	"211,1168"
 )
 
 -- Numbers near the safe-integer boundary must remain exact.
@@ -150,4 +151,13 @@ check(
 	"TEST 18",
 	string.format("%.0f,%.0f", boundary_pos, boundary_neg),
 	"9007199254740991,-9007199254740991"
+)
+
+-- Large hex literals (>53 bits) must round to nearest-even identically to Lua/Luau,
+-- even through passes like Vmify that reconstruct numbers without raw text.
+local hex_large = 0x2944075f548d8d9
+check(
+	"TEST 19",
+	string.format("%.0f", hex_large),
+	"185844359999576288"
 )
